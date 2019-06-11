@@ -1,0 +1,29 @@
+{
+  "name": "tigsync",
+  "version": "1.2.0",
+  "description": "Sample web application using Twilio Sync.",
+  "engines": {
+    "node": "10.x"
+  },
+  "main": "webserver.js",
+  "scripts": {
+    "start": "node webserver.js"
+  },
+  "dependencies": {
+    "express": "^4.15.2",
+    "twilio": "^3.31.0",
+    "twilio-sync": "^0.11.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heroku/tigsync"
+  },
+  "keywords": [
+    "twilio",
+    "sync",
+    "node",
+    "express",
+    "heroku"
+  ],
+  "license": "MIT"
+}
