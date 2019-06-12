@@ -86,12 +86,12 @@ function getToken() {
             syncDoc.on('updated', function (syncEvent) {
                 theMessage = '';
                 if (syncEvent.isLocal) {
-                    theMessage = "syncDoc updated by this player: ";
+                    theMessage = "Updated by this player: ";
                 } else {
-                    theMessage = "syncDoc updated by another player: ";
+                    theMessage = "Updated by another player: ";
                 }
                 logger(theMessage + syncEvent.value.useridentity);
-                // logger('The Sync document JSON: ' + JSON.stringify(syncEvent.value));
+                logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
                 updateUserInterface(syncEvent.value);
             });
         });

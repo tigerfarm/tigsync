@@ -10,6 +10,17 @@ I also enhanced the code documentation.
 
 Following are the steps to configure and use the web application.
 
+--------------------------------------------------------------------------------
+## Sync Components
+
+Twilio Console Configuration: Sync service and API key (with a secret key string).
+
+Environment variables for the server side program to create a token.
+
+A Node.js Express webserver to server static files and generate a token.
+
+Browser client (HTML/CSS/JavaScript) to make use Sync document data.
+
 ## Twilio Console Configuration
 
 1. Create a Sync Service:
@@ -44,7 +55,7 @@ $ node webserver.js
 
 ## Test
 
-Use a browser to call the application:
+Use a browser to call the webserver application:
 
 http://localhost:8000/
 

@@ -49,6 +49,8 @@ app.get('/token', function (request, response) {
 });
 
 // -----------------------------------------------------------------------------
+// Serve static web pages
+//
 app.use(express.static('docroot'));
 app.use(function (err, req, res, next) {
     console.error(err.stack);
