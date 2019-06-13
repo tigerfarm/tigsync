@@ -12,6 +12,7 @@ var thisIdentity = '';
 var thisDocumentName = 'test';  // This needs to be integrated because the document name is not available in a Sync update event.
 var syncClientObject;
 var thisSyncDoc;
+var theSyncDocumentName;
 var $buttons = $('#board .board-row button');
 
 function logger(message) {
@@ -83,6 +84,7 @@ function getTokenSetSyncObject() {
         //
         // ---------------------------------------------------------------------
         // Events: connectionStateChanged, tokenAboutToExpire, tokenExpired
+
         syncClientObject.on('connectionStateChanged', function (state) {
             if (state === 'connected') {
                 logger('Sync is connected.');
@@ -98,6 +100,7 @@ function getTokenSetSyncObject() {
             // key: "updateToken",
             // value: function updateToken(token)
         });
+
         // ---------------------------------------------------------------------
     });
 }
@@ -111,38 +114,49 @@ function documentSubscribe() {
         return;
     }
     // -------------------------------------------------------------------------
-    // The game board data is stored in a Sync document.
-    // Subscribe to the document; or if it doesn't exist, create it.
-    // 
     syncClientObject.document(syncDocumentName).then(function (syncDoc) {
-        logger('Subscribed to updates for Sync document : ' + syncDocumentName);
+        theSyncDocumentName = syncDocumentName;
+        logger('Sync document object created for document: ' + theSyncDocumentName);
         thisSyncDoc = syncDoc;
-        var data = syncDoc.value;
+        var data = thisSyncDoc.value;
         if (data.board) {
             updateBoardSquares(data);
             $("#mSyncDocumentName").html("Game document loaded.");
         } else {
             $("#mSyncDocumentName").html("New game document.");
         }
+
         // ---------------------------------------------------------------------
-        // Events
-        syncDoc.on('updated', function (syncEvent) {
-            var currentSyncDocumentName = $("#syncDocumentName").val();
-            thisDocumentName = syncEvent.value.name;
-            logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
-            // if (currentSyncDocumentName !== thisDocumentName) {
-                // $("#syncDocumentName").val(thisDocumentName);
-                // $("#mSyncDocumentName").html("Newly updated");
-            // }
-            if (syncEvent.isLocal) {
-                $("#mSyncDocumentName").html("");   // updated by self.
-            } else {
-                theMessage = "Updated by another player: ";
-                $("#mSyncDocumentName").html("Updated: " + thisDocumentName +  " by: " + syncEvent.value.useridentity);
-            }
-            logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
-            updateBoardSquares(syncEvent.value);
-        });
+        // Need to not re-subscribe to a document.
+        //  Else, for each re-subscription, when an update is made,
+        //      it will be processed that same number of times subscribed.
+        //
+        // @flozanovski, suggested the following, for an object binding:
+        //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
+        //  
+        subscribeEvents();
+        // ---------------------------------------------------------------------
+    });
+}
+
+function subscribeEvents() {
+    logger('Subscribed to updates for Sync document : ' + theSyncDocumentName);
+    thisSyncDoc.on('updated', function (syncEvent) {
+        var currentSyncDocumentName = $("#syncDocumentName").val();
+        thisDocumentName = syncEvent.value.name;
+        logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
+        // if (currentSyncDocumentName !== thisDocumentName) {
+        // $("#syncDocumentName").val(thisDocumentName);
+        // $("#mSyncDocumentName").html("Newly updated");
+        // }
+        if (syncEvent.isLocal) {
+            $("#mSyncDocumentName").html("");   // updated by self.
+        } else {
+            theMessage = "Updated by another player: ";
+            $("#mSyncDocumentName").html("Updated: " + thisDocumentName + " by: " + syncEvent.value.useridentity);
+        }
+        logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
+        updateBoardSquares(syncEvent.value);
     });
 }
 
@@ -164,8 +178,6 @@ function updateSyncDocument() {
 }
 
 function deleteGame() {
-    // logger('To do: deleteGame.');
-    // return;
     clearFormMessages();
     var syncDocumentName = $("#syncDocumentName").val();
     if (syncDocumentName === "") {
