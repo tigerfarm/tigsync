@@ -38,11 +38,12 @@
                     <tr><td>Password</td><td><input type="password" id="tokenPassword" name="tokenPassword" placeholder="Your access password"/>&nbsp;</td><td id="mTokenPassword"></td></tr>
                     <tr><td>Game name (Sync document) &nbsp;</td><td><input id="syncDocumentName" type="text"/>&nbsp;</td><td id="mSyncDocumentName"></tr>
                 </table>
-                <table>
+                <table style="margin-top: 6px;">
                     <tr>
-                        <td><button class="abutton" id="btn-trtoken" onclick="getToken();" style="visibility: visible;">Get token</button></td>
+                        <td><button class="abutton" id="getTokenSetSyncObject" onclick="getTokenSetSyncObject();" style="visibility: visible;">Get token</button></td>
                         <td><button class="abutton" id="clearBoard" onclick="clearBoard();">Clear board</button></td>
-                        <td><button class="abutton" id="getGame" onclick="getGame();">Get game</button></td>
+                        <td><button class="abutton" id="getGame" onclick="getGame();">Game get, subscribe</button></td>
+                        <td><button class="abutton" id="deleteGame" onclick="deleteGame();">Delete game</button></td>
                     </tr>
                 </table>
             </div>

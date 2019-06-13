@@ -21,7 +21,7 @@ app.get('/token', function (request, response) {
     if (request.query.password) {
         tokenPassword = request.query.password;
         if (tokenPassword !== process.env.TOKEN_PASSWORD) {
-            response.send({message: '- User identity and Password combination, not valid.'});
+            response.send({message: 'Identity or Password not valid.'});
             return;
         }
     } else {
@@ -32,6 +32,7 @@ app.get('/token', function (request, response) {
     var syncGrant = new SyncGrant({
         serviceSid: process.env.SYNC_SERVICE_SID
     });
+    // Need to test: ttl.
     var token = new AccessToken(
             process.env.ACCOUNT_SID,
             process.env.API_KEY,

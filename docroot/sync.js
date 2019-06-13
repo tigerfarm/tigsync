@@ -4,7 +4,8 @@
 //
 // Twilio Sync source program:
 //  https://media.twiliocdn.com/sdk/js/sync/releases/0.11.1/twilio-sync.js
-//  
+// Documentation, Sync document:
+//  https://www.twilio.com/docs/sync/documents
 // -----------------------------------------------------------------------------
 
 var thisIdentity = '';
@@ -20,17 +21,40 @@ function logger(message) {
 function clearLog() {
     log.value = "+ Ready";
 }
+function clearFormMessages() {
+    $("#mUserIdentity").html("");
+    $("#mTokenPassword").html("");
+    $("#mSyncDocumentName").html("");
+}
+function setButtons(activity) {
+    logger("setButtons, activity: " + activity);
+    // $("div.callMessages").html("Activity: " + activity);
+    switch (activity) {
+        case "init":
+            $('#getTokenSetSyncObject').prop('disabled', false);
+            $('#clearBoard').prop('disabled', true);
+            $('#getGame').prop('disabled', true);
+            $('#deleteGame').prop('disabled', true);
+            break;
+        case "getTokenSetSyncObject":
+            $('#getTokenSetSyncObject').prop('disabled', true);
+            $('#clearBoard').prop('disabled', false);
+            $('#getGame').prop('disabled', false);
+            $('#deleteGame').prop('disabled', false);
+            break;
+    }
+}
+
 window.onload = function () {
     log.value = "+++ Start.";
+    setButtons('init');
 };
 
 // -----------------------------------------------------------------------------
 // Sync functions
 
-function getToken() {
-    $("#mUserIdentity").html("");
-    $("#mTokenPassword").html("");
-    $("#mSyncDocumentName").html("");
+function getTokenSetSyncObject() {
+    clearFormMessages();
     //
     thisIdentity = $("#userIdentity").val();
     if (thisIdentity === "") {
@@ -42,12 +66,6 @@ function getToken() {
     if (tokenPassword === "") {
         $("#mTokenPassword").html("Required");
         logger("Required: user password.");
-        return;
-    }
-    var syncDocumentName = $("#syncDocumentName").val();
-    if (syncDocumentName === "") {
-        $("#mSyncDocumentName").html("Required");
-        logger("Required: Game name.");
         return;
     }
     $.getJSON('/token?identity=' + thisIdentity + "&password=" + tokenPassword, function (tokenResponse) {
@@ -62,43 +80,29 @@ function getToken() {
         logger('Create Sync object.');
         syncClientObject = new Twilio.Sync.Client(tokenResponse.token, {logLevel: 'info'});
         //
+        // ---------------------------------------------------------------------
+        // Events: connectionStateChanged, tokenAboutToExpire, tokenExpired
         syncClientObject.on('connectionStateChanged', function (state) {
             if (state === 'connected') {
                 logger('Sync is connected.');
+                setButtons('getTokenSetSyncObject');
             } else {
                 logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
                 return;
             }
         });
-        // -------------------------------------------------------------------------
-        // The game state is stored in a Sync document: SyncGame.
-        // Attach to the document; or if it doesn't exist, create it.
-        // 
-        syncClientObject.document(syncDocumentName).then(function (syncDoc) {
-            thisSyncDoc = syncDoc;
-            logger('Loading board data.');
-            var data = syncDoc.value;
-            if (data.board) {
-                updateBoardSquares(data);
-            }
-            //
-            logger('Subscribed to updates for Sync document : ' + syncDocumentName);
-            syncDoc.on('updated', function (syncEvent) {
-                theMessage = '';
-                if (syncEvent.isLocal) {
-                    theMessage = "Updated by this player: ";
-                } else {
-                    theMessage = "Updated by another player: ";
-                }
-                logger(theMessage + syncEvent.value.useridentity);
-                logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
-                updateBoardSquares(syncEvent.value);
-            });
+        syncClientObject.on('tokenAboutToExpire', function () {
+            logger('Event happened: tokenAboutToExpire.');
+            setButtons('init'); // for now
+            // key: "updateToken",
+            // value: function updateToken(token)
         });
+        // ---------------------------------------------------------------------
     });
 }
 
 function documentSubscribe() {
+    clearFormMessages();
     var syncDocumentName = $("#syncDocumentName").val();
     if (syncDocumentName === "") {
         $("#mSyncDocumentName").html("Required");
@@ -110,22 +114,28 @@ function documentSubscribe() {
     // Subscribe to the document; or if it doesn't exist, create it.
     // 
     syncClientObject.document(syncDocumentName).then(function (syncDoc) {
+        logger('Subscribed to updates for Sync document : ' + syncDocumentName);
         thisSyncDoc = syncDoc;
-        logger('Loading board data.');
         var data = syncDoc.value;
         if (data.board) {
             updateBoardSquares(data);
+            $("#mSyncDocumentName").html("Game document loaded.");
+        } else {
+            $("#mSyncDocumentName").html("New game document.");
         }
-        //
-        logger('Subscribed to updates for Sync document : ' + syncDocumentName);
+        // ---------------------------------------------------------------------
+        // Events
         syncDoc.on('updated', function (syncEvent) {
+            //
+            // Fix: need the name of the document that was updated, for the case of subscribing to multiple documents.
+            //
             theMessage = '';
             if (syncEvent.isLocal) {
                 theMessage = "Updated by this player: ";
             } else {
                 theMessage = "Updated by another player: ";
             }
-            logger(theMessage + syncEvent.value.useridentity);
+            logger(theMessage + syncEvent.value.useridentity + ', document: ' + syncEvent.key);
             logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
             updateBoardSquares(syncEvent.value);
         });
@@ -139,8 +149,46 @@ function updateSyncDocument() {
         return;
     }
     var currentBoard = readGameBoardFromUserInterface();
-    logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
+    // logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
     thisSyncDoc.set(currentBoard);
+}
+
+function deleteGame() {
+    // logger('To do: deleteGame.');
+    // return;
+    clearFormMessages();
+    var syncDocumentName = $("#syncDocumentName").val();
+    if (syncDocumentName === "") {
+        $("#mSyncDocumentName").html("Required");
+        logger("Required: Game name (Sync document name).");
+        return;
+    }
+    if (thisIdentity === "") {
+        $("#mUserIdentity").html("Required");
+        logger("Required: user identity.");
+        return;
+    }
+    clearBoard();
+    syncClientObject.document(syncDocumentName).then(function (syncDoc) {
+        syncDoc.removeDocument().then(function () {
+            logger('Game document deleted.');
+        });
+    });
+}
+
+// -------------------------------------------------------------------------
+// HTML Tic-Tac Board Functions
+
+function clearBoard() {
+    if (thisIdentity === "") {
+        $("#mUserIdentity").html("Required");
+        logger("Required: user identity.");
+        return;
+    }
+    aClearBoard = {"board": [["", "", ""], ["", "", ""], ["", "", ""]], "useridentity": thisIdentity};
+    logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
+    updateBoardSquares(aClearBoard);
+    updateSyncDocument();
 }
 
 function getGame() {
@@ -155,25 +203,10 @@ function getGame() {
         logger("Required: Game name.");
         return;
     }
-    aClearBoard = {"board":[["","",""],["","",""],["","",""]],"useridentity":thisIdentity};
-    logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
+    aClearBoard = {"board": [["", "", ""], ["", "", ""], ["", "", ""]], "useridentity": thisIdentity};
+    // logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
     updateBoardSquares(aClearBoard);
-    documentSubscribe()();
-}
-
-// -------------------------------------------------------------------------
-// HTML Tic-Tac Board Functions
-
-function clearBoard() {
-    if (thisIdentity === "") {
-        $("#mUserIdentity").html("Required");
-        logger("Required: user identity.");
-        return;
-    }
-    aClearBoard = {"board":[["","",""],["","",""],["","",""]],"useridentity":thisIdentity};
-    logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
-    updateBoardSquares(aClearBoard);
-    updateSyncDocument();
+    documentSubscribe();
 }
 
 function buttonClick() {
