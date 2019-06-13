@@ -9,6 +9,7 @@
 // -----------------------------------------------------------------------------
 
 var thisIdentity = '';
+var thisDocumentName = 'test';  // This needs to be integrated because the document name is not available in a Sync update event.
 var syncClientObject;
 var thisSyncDoc;
 var $buttons = $('#board .board-row button');
@@ -126,16 +127,19 @@ function documentSubscribe() {
         // ---------------------------------------------------------------------
         // Events
         syncDoc.on('updated', function (syncEvent) {
-            //
-            // Fix: need the name of the document that was updated, for the case of subscribing to multiple documents.
-            //
-            theMessage = '';
+            var currentSyncDocumentName = $("#syncDocumentName").val();
+            thisDocumentName = syncEvent.value.name;
+            logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
+            // if (currentSyncDocumentName !== thisDocumentName) {
+                // $("#syncDocumentName").val(thisDocumentName);
+                // $("#mSyncDocumentName").html("Newly updated");
+            // }
             if (syncEvent.isLocal) {
-                theMessage = "Updated by this player: ";
+                $("#mSyncDocumentName").html("");   // updated by self.
             } else {
                 theMessage = "Updated by another player: ";
+                $("#mSyncDocumentName").html("Updated: " + thisDocumentName +  " by: " + syncEvent.value.useridentity);
             }
-            logger(theMessage + syncEvent.value.useridentity + ', document: ' + syncEvent.key);
             logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
             updateBoardSquares(syncEvent.value);
         });
@@ -148,9 +152,15 @@ function updateSyncDocument() {
         logger("Required: user identity.");
         return;
     }
+    var syncDocumentName = $("#syncDocumentName").val();
+    if (syncDocumentName === "") {
+        $("#mSyncDocumentName").html("Required");
+        logger("Required: Game name (Sync document name).");
+        return;
+    }
     var currentBoard = readGameBoardFromUserInterface();
     // logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
-    thisSyncDoc.set(currentBoard);
+    thisSyncDoc.set({board: currentBoard, useridentity: thisIdentity, name: syncDocumentName});
 }
 
 function deleteGame() {
@@ -238,7 +248,8 @@ function readGameBoardFromUserInterface() {
         }
     }
     // Example: {"board":[["X","O","X"],["","O",""],["","",""]],"useridentity":"david"}
-    return {board: board, useridentity: thisIdentity};
+    // return {board: board, useridentity: thisIdentity, name: thisDocumentName};
+    return board;
 }
 
 // Update the squares on the board to match the data.
