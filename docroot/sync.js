@@ -6,51 +6,15 @@
 //  https://media.twiliocdn.com/sdk/js/sync/releases/0.11.1/twilio-sync.js
 // Documentation, Sync document:
 //  https://www.twilio.com/docs/sync/documents
+//  
 // -----------------------------------------------------------------------------
 
 var thisIdentity = '';
-var thisDocumentName = 'test';  // This needs to be integrated because the document name is not available in a Sync update event.
-var syncClientObject;
-var thisSyncDoc;
-var theSyncDocumentName;
-var $buttons = $('#board .board-row button');
+var thisSyncClientObject;
+var thisSyncDocumentObject;
+var theSyncDocumentName;        // The document name is needs work.
 
-function logger(message) {
-    var aTextarea = document.getElementById('log');
-    aTextarea.value += "\n> " + message;
-    aTextarea.scrollTop = aTextarea.scrollHeight;
-}
-function clearLog() {
-    log.value = "+ Ready";
-}
-function clearFormMessages() {
-    $("#mUserIdentity").html("");
-    $("#mTokenPassword").html("");
-    $("#mSyncDocumentName").html("");
-}
-function setButtons(activity) {
-    logger("setButtons, activity: " + activity);
-    // $("div.callMessages").html("Activity: " + activity);
-    switch (activity) {
-        case "init":
-            $('#getTokenSetSyncObject').prop('disabled', false);
-            $('#clearBoard').prop('disabled', true);
-            $('#getGame').prop('disabled', true);
-            $('#deleteGame').prop('disabled', true);
-            break;
-        case "getTokenSetSyncObject":
-            $('#getTokenSetSyncObject').prop('disabled', true);
-            $('#clearBoard').prop('disabled', false);
-            $('#getGame').prop('disabled', false);
-            $('#deleteGame').prop('disabled', false);
-            break;
-    }
-}
-
-window.onload = function () {
-    log.value = "+++ Start.";
-    setButtons('init');
-};
+// var $buttons = $('#board .board-row button');
 
 // -----------------------------------------------------------------------------
 // Sync functions
@@ -80,12 +44,12 @@ function getTokenSetSyncObject() {
         logger('tokenResponse.token: ' + tokenResponse.token);
         //
         logger('Create Sync object.');
-        syncClientObject = new Twilio.Sync.Client(tokenResponse.token, {logLevel: 'info'});
+        thisSyncClientObject = new Twilio.Sync.Client(tokenResponse.token, {logLevel: 'info'});
         //
         // ---------------------------------------------------------------------
         // Events: connectionStateChanged, tokenAboutToExpire, tokenExpired
 
-        syncClientObject.on('connectionStateChanged', function (state) {
+        thisSyncClientObject.on('connectionStateChanged', function (state) {
             if (state === 'connected') {
                 logger('Sync is connected.');
                 setButtons('getTokenSetSyncObject');
@@ -94,7 +58,7 @@ function getTokenSetSyncObject() {
                 return;
             }
         });
-        syncClientObject.on('tokenAboutToExpire', function () {
+        thisSyncClientObject.on('tokenAboutToExpire', function () {
             logger('Event happened: tokenAboutToExpire.');
             setButtons('init'); // for now
             // key: "updateToken",
@@ -114,11 +78,11 @@ function documentSubscribe() {
         return;
     }
     // -------------------------------------------------------------------------
-    syncClientObject.document(syncDocumentName).then(function (syncDoc) {
+    thisSyncClientObject.document(syncDocumentName).then(function (syncDoc) {
         theSyncDocumentName = syncDocumentName;
         logger('Sync document object created for document: ' + theSyncDocumentName);
-        thisSyncDoc = syncDoc;
-        var data = thisSyncDoc.value;
+        thisSyncDocumentObject = syncDoc;
+        var data = thisSyncDocumentObject.value;
         if (data.board) {
             updateBoardSquares(data);
             $("#mSyncDocumentName").html("Game document loaded.");
@@ -141,9 +105,9 @@ function documentSubscribe() {
 
 function subscribeEvents() {
     logger('Subscribed to updates for Sync document : ' + theSyncDocumentName);
-    thisSyncDoc.on('updated', function (syncEvent) {
+    thisSyncDocumentObject.on('updated', function (syncEvent) {
         var currentSyncDocumentName = $("#syncDocumentName").val();
-        thisDocumentName = syncEvent.value.name;
+        var thisDocumentName = syncEvent.value.name;
         logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
         // if (currentSyncDocumentName !== thisDocumentName) {
         // $("#syncDocumentName").val(thisDocumentName);
@@ -174,7 +138,7 @@ function updateSyncDocument() {
     }
     var currentBoard = readGameBoardFromUserInterface();
     // logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
-    thisSyncDoc.set({board: currentBoard, useridentity: thisIdentity, name: syncDocumentName});
+    thisSyncDocumentObject.set({board: currentBoard, useridentity: thisIdentity, name: syncDocumentName});
 }
 
 function deleteGame() {
@@ -191,14 +155,14 @@ function deleteGame() {
         return;
     }
     clearBoard();
-    syncClientObject.document(syncDocumentName).then(function (syncDoc) {
+    thisSyncClientObject.document(syncDocumentName).then(function (syncDoc) {
         syncDoc.removeDocument().then(function () {
             logger('Game document deleted.');
         });
     });
 }
 
-// -------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // HTML Tic-Tac Board Functions
 
 function clearBoard() {
@@ -259,8 +223,7 @@ function readGameBoardFromUserInterface() {
             board[row][col] = $(selector).html().replace('&nbsp;', '');
         }
     }
-    // Example: {"board":[["X","O","X"],["","O",""],["","",""]],"useridentity":"david"}
-    // return {board: board, useridentity: thisIdentity, name: thisDocumentName};
+    // Example: board = [["X","O","X"],["","O",""],["","",""]]
     return board;
 }
 
@@ -275,3 +238,44 @@ function updateBoardSquares(data) {
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+
+function logger(message) {
+    var aTextarea = document.getElementById('log');
+    aTextarea.value += "\n> " + message;
+    aTextarea.scrollTop = aTextarea.scrollHeight;
+}
+function clearLog() {
+    log.value = "+ Ready";
+}
+function clearFormMessages() {
+    $("#mUserIdentity").html("");
+    $("#mTokenPassword").html("");
+    $("#mSyncDocumentName").html("");
+}
+function setButtons(activity) {
+    logger("setButtons, activity: " + activity);
+    // $("div.callMessages").html("Activity: " + activity);
+    switch (activity) {
+        case "init":
+            $('#getTokenSetSyncObject').prop('disabled', false);
+            $('#clearBoard').prop('disabled', true);
+            $('#getGame').prop('disabled', true);
+            $('#deleteGame').prop('disabled', true);
+            break;
+        case "getTokenSetSyncObject":
+            $('#getTokenSetSyncObject').prop('disabled', true);
+            $('#clearBoard').prop('disabled', false);
+            $('#getGame').prop('disabled', false);
+            $('#deleteGame').prop('disabled', false);
+            break;
+    }
+}
+
+window.onload = function () {
+    log.value = "+++ Start.";
+    setButtons('init');
+};
+
+// -----------------------------------------------------------------------------
