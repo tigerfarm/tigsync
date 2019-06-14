@@ -112,6 +112,7 @@ function getSyncDocumentSetBoard(subscribe) {
         thisSyncDocumentObject = syncDoc;
         var data = thisSyncDocumentObject.value;
         if (data.board) {
+            logger('Sync document data: ' + JSON.stringify(data));
             updateGameBoard(data);
             $("#mSyncDocumentName").html("Game document loaded.");
         } else {
