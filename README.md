@@ -82,17 +82,21 @@ Change to the other tab to see the change.
 --------------------------------------------------------------------------------
 ## Program Descriptions
 
-webserver.js : basic HTTP webserver to server the static files (directory docroot) and generate Sync tokens.
+webserver.js : Node.js Express webserver to serve the static files (directory docroot) and generate Sync tokens.
 
-docroot : static website with Ajax call to get a Sync token from the webserver.
+docroot : static website of HTML, CSS, JavaScript, and graphics files.
 
-docroot/index.html : the game page.
+docroot/index.html : the game HTML page.
 
 docroot/sync.js : the game JavaScript program.
+
+docroot/customer/sync.css : HTML page styles.
 
 listDocuments.js : list Sync documents.
 
 retrieveDocument.js : retrieve a Sync document, the one used in the sample application.
+
+app.json and package.json : Heroku deployment files.
 
 --------------------------------------------------------------------------------
 
