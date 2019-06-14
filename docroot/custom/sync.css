@@ -74,7 +74,7 @@ h1 {
     margin-top: 6px;
 }
 /* -------------------------------------------------------------------------- */
-#chatBox
+#mainBox
 {
     margin-top: 6px;
     height: 386px;
@@ -134,7 +134,7 @@ select option {
 }
 
 .abutton {
-    width: 76px;
+    width: 86px;
     height: 40px;
     border-radius: 9px;
     color: white;
@@ -156,7 +156,7 @@ select option {
     border-bottom-color: #3884CF;
 }
 .abutton:disabled {
-    width: 76px;
+    width: 86px;
     height: 40px;
     border-radius: 9px;
     color: white;

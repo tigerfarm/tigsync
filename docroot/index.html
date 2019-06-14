@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>1 Tic-Tac-Twilio</title>
+        <title>Tic-Tac-Sync</title>
         <link href="custom/favicon.ico" rel="shortcut icon" type="image/x-icon">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         <link rel="stylesheet" href="custom/sync.css">
@@ -11,7 +11,7 @@
     </head>
     <body>
         <script type="text/javascript" src="custom/pageTop.js"></script>
-        <div id="chatBox">
+        <div id="mainBox">
             <div class="panelTitle">
                 Sample Application using Twilio Sync
             </div>
@@ -42,7 +42,7 @@
                     <tr>
                         <td><button class="abutton" id="getTokenSetSyncObject" onclick="getTokenSetSyncObject();" style="visibility: visible;">Get token</button></td>
                         <td><button class="abutton" id="resetTokenSyncObject" onclick="resetTokenSyncObject();" style="visibility: visible;margin-right: 6px;">Reset token</button></td>
-                        <td><button class="abutton" id="clearBoard" onclick="clearBoard();">Clear board</button></td>
+                        <td><button class="abutton" id="clearGameBoard" onclick="clearGameBoard();">Clear game board</button></td>
                         <td><button class="abutton" id="getGameSubscribe" onclick="getSyncDocumentSetBoard('subscribe');">Game get, subscribe</button></td>
                         <td><button class="abutton" id="getGame" onclick="getSyncDocumentSetBoard('');">Game get</button></td>
                         <td><button class="abutton" id="deleteGame" onclick="deleteGame();">Delete game</button></td>

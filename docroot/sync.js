@@ -194,7 +194,7 @@ function deleteGame() {
         logger("Required: user identity.");
         return;
     }
-    clearBoard();
+    clearGameBoard();
     thisSyncClientObject.document(syncDocumentName).then(function (syncDoc) {
         syncDoc.removeDocument().then(function () {
             logger('Game document deleted.');
@@ -205,14 +205,9 @@ function deleteGame() {
 // -----------------------------------------------------------------------------
 // HTML Tic-Tac Board Functions
 
-function clearBoard() {
-    if (thisIdentity === "") {
-        $("#mUserIdentity").html("Required");
-        logger("Required: user identity.");
-        return;
-    }
-    aClearBoard = {"board": [["", "", ""], ["", "", ""], ["", "", ""]], "useridentity": thisIdentity};
-    logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
+function clearGameBoard() {
+    aClearBoard = {board: [["", "", ""], ["", "", ""], ["", "", ""]]};
+    // logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
     updateBoardSquares(aClearBoard);
     updateSyncDocument();
 }
@@ -288,7 +283,7 @@ function setButtons(activity) {
         case "init":
             $('#getTokenSetSyncObject').prop('disabled', false);
             $('#resetTokenSyncObject').prop('disabled', true);
-            $('#clearBoard').prop('disabled', true);
+            $('#clearGameBoard').prop('disabled', true);
             $('#getGameSubscribe').prop('disabled', true);
             $('#getGame').prop('disabled', true);
             $('#deleteGame').prop('disabled', true);
@@ -300,7 +295,7 @@ function setButtons(activity) {
         case "getTokenSetSyncObject":
             $('#getTokenSetSyncObject').prop('disabled', true);
             $('#resetTokenSyncObject').prop('disabled', false);
-            $('#clearBoard').prop('disabled', false);
+            $('#clearGameBoard').prop('disabled', false);
             $('#getGameSubscribe').prop('disabled', false);
             $('#getGame').prop('disabled', false);
             $('#deleteGame').prop('disabled', false);

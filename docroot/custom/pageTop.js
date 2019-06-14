@@ -1,7 +1,7 @@
 document.write('<div id="topBar">');
 document.write('<table><tr>');
 document.write('<td><a href="/index.html"><img src="custom/companyLogo.jpg" alt="Twilio" style="width:120px; padding-right: 30px;"/></a></td>');
-document.write('<td><h1>Tic-Tac-Toe Application</h1></td>');
+document.write('<td><h1>Tic-Tac-Toe Sync Application</h1></td>');
 
 // Not used at this time.
 document.write('<!-- td>');
