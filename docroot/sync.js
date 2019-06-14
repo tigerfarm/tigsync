@@ -74,29 +74,18 @@ function createSyncObject(token) {
 }
 
 function getTokenUpdateSyncObject() {
-    if (thisIdentity === "") {
-        $("#mUserIdentity").html("Required");
-        logger("Required: user identity.");
-        return;
-    }
     var tokenPassword = $("#tokenPassword").val();
-    if (tokenPassword === "") {
-        $("#mTokenPassword").html("Required");
-        logger("Required: user password.");
-        return;
-    }
     $.getJSON('/token?identity=' + thisIdentity + "&password=" + tokenPassword, function (tokenResponse) {
         if (tokenResponse.message !== '') {
             $("#mTokenPassword").html(tokenResponse.message);
             logger(tokenResponse.message);
             return;
         }
-        $("#mUserIdentity").html("Token refreshed");
-        logger('Update: tokenResponse.token: ' + tokenResponse.token);
+        $("#mUserIdentity").html("Update: token refreshed");
+        // logger('Update: tokenResponse.token: ' + tokenResponse.token);
         //
-        // value: function updateToken(token)
         thisSyncClientObject.updateToken(tokenResponse.token);
-        logger('Sync Client Object token: updated.');
+        logger('Sync client object token: updated.');
     });
 }
 
@@ -123,7 +112,7 @@ function getSyncDocumentSetBoard(subscribe) {
         thisSyncDocumentObject = syncDoc;
         var data = thisSyncDocumentObject.value;
         if (data.board) {
-            updateBoardSquares(data);
+            updateGameBoard(data);
             $("#mSyncDocumentName").html("Game document loaded.");
         } else {
             $("#mSyncDocumentName").html("New game document.");
@@ -140,27 +129,31 @@ function documentSubscribeEvents() {
     // Need to not re-subscribe to a document.
     //  Else, for each re-subscription, when an update is made,
     //      it will be processed that same number of times subscribed.
+    //      This is similar to the issue with Chat.
     //
     // @flozanovski, suggested the following, for an object binding:
     //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
     //
-    logger('Subscribed to updates for Sync document : ' + theSyncDocumentName);
+    logger('Subscribe to updates for Sync document : ' + theSyncDocumentName);
     thisSyncDocumentObject.on('updated', function (syncEvent) {
-        var currentSyncDocumentName = $("#syncDocumentName").val();
+        var thisDocumentUser = syncEvent.value.useridentity;
         var thisDocumentName = syncEvent.value.name;
-        logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
+        // var currentSyncDocumentName = $("#syncDocumentName").val();
+        // logger('currentSyncDocumentName: ' + currentSyncDocumentName + ", thisDocumentName: " + thisDocumentName);
         // if (currentSyncDocumentName !== thisDocumentName) {
         // $("#syncDocumentName").val(thisDocumentName);
         // $("#mSyncDocumentName").html("Newly updated");
         // }
         if (syncEvent.isLocal) {
-            $("#mSyncDocumentName").html("");   // updated by self.
+            // Updated by self.
+            $("#mSyncDocumentName").html("");
         } else {
-            theMessage = "Updated by another player: ";
-            $("#mSyncDocumentName").html("Updated: " + thisDocumentName + " by: " + syncEvent.value.useridentity);
+            // Updated by another player.
+            $("#mSyncDocumentName").html("Updated: " + thisDocumentName + " by: " + thisDocumentUser);
         }
-        logger('Sync document JSON data: ' + JSON.stringify(syncEvent.value));
-        updateBoardSquares(syncEvent.value);
+        // logger('Upated Sync document data: ' + JSON.stringify(syncEvent.value));
+        logger('Upated Sync document data by: ' + thisDocumentUser);
+        updateGameBoard(syncEvent.value);
     });
 }
 
@@ -176,7 +169,7 @@ function updateSyncDocument() {
         logger("Required: Game name (Sync document name).");
         return;
     }
-    var currentBoard = readGameBoardFromUserInterface();
+    var currentBoard = readGameBoard();
     // logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
     thisSyncDocumentObject.set({board: currentBoard, useridentity: thisIdentity, name: syncDocumentName});
 }
@@ -194,23 +187,16 @@ function deleteGame() {
         logger("Required: user identity.");
         return;
     }
-    clearGameBoard();
     thisSyncClientObject.document(syncDocumentName).then(function (syncDoc) {
         syncDoc.removeDocument().then(function () {
+            clearBoard();
             logger('Game document deleted.');
         });
     });
 }
 
 // -----------------------------------------------------------------------------
-// HTML Tic-Tac Board Functions
-
-function clearGameBoard() {
-    aClearBoard = {board: [["", "", ""], ["", "", ""], ["", "", ""]]};
-    // logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
-    updateBoardSquares(aClearBoard);
-    updateSyncDocument();
-}
+// HTML Tic-Tac board functions
 
 function buttonClick() {
     $square = $(event.target);
@@ -225,9 +211,16 @@ function buttonClick() {
     updateSyncDocument();
 }
 
-//Read the state of the UI and create a new document
-function readGameBoardFromUserInterface() {
-    // logger('readGameBoardFromUserInterface()');
+function clearGameBoard() {
+    clearBoard();
+    updateSyncDocument();
+}
+function clearBoard() {
+    updateGameBoard({board: [["", "", ""], ["", "", ""], ["", "", ""]]});
+}
+
+function readGameBoard() {
+    // logger('readGameBoard()');
     var board = [
         ['', '', ''],
         ['', '', ''],
@@ -244,14 +237,13 @@ function readGameBoardFromUserInterface() {
     return board;
 }
 
-// Update the squares on the board to match the data.
-function updateBoardSquares(data) {
-    // logger('updateBoardSquares()');
+function updateGameBoard(data) {
+    // logger('updateGameBoard()');
     for (var row = 0; row < 3; row++) {
         for (var col = 0; col < 3; col++) {
-            var this_cell = '[data-row="' + row + '"]' + '[data-col="' + col + '"]';
-            var cellValue = data.board[row][col];
-            $(this_cell).html(cellValue === '' ? '&nbsp;' : cellValue);
+            var this_square = '[data-row="' + row + '"]' + '[data-col="' + col + '"]';
+            var squareValue = data.board[row][col];
+            $(this_square).html(squareValue === '' ? '&nbsp;' : squareValue);
         }
     }
 }
@@ -273,11 +265,11 @@ function clearFormMessages() {
     $("#mSyncDocumentName").html("");
 }
 function resetTokenSyncObject() {
-    updateBoardSquares({"board": [["", "", ""], ["", "", ""], ["", "", ""]]});
+    clearBoard();
     setButtons('init');
 }
 function setButtons(activity) {
-    logger("setButtons, activity: " + activity);
+    // logger("setButtons, activity: " + activity);
     // $("div.callMessages").html("Activity: " + activity);
     switch (activity) {
         case "init":
