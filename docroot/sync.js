@@ -44,17 +44,10 @@ function getTokenSetSyncObject() {
         logger('tokenResponse.token: ' + tokenResponse.token);
         //
         createSyncObject(tokenResponse.token);
-
-        // ---------------------------------------------------------------------
     });
 }
 
 function createSyncObject(token) {
-    if (token === "") {
-        $("#mTokenPassword").html("Required");
-        logger("Required: user password.");
-        return;
-    }
     logger('Create Sync object.');
     thisSyncClientObject = new Twilio.Sync.Client(token, {logLevel: 'info'});
     //
@@ -284,23 +277,37 @@ function clearFormMessages() {
     $("#mTokenPassword").html("");
     $("#mSyncDocumentName").html("");
 }
+function resetTokenSyncObject() {
+    updateBoardSquares({"board": [["", "", ""], ["", "", ""], ["", "", ""]]});
+    setButtons('init');
+}
 function setButtons(activity) {
     logger("setButtons, activity: " + activity);
     // $("div.callMessages").html("Activity: " + activity);
     switch (activity) {
         case "init":
             $('#getTokenSetSyncObject').prop('disabled', false);
+            $('#resetTokenSyncObject').prop('disabled', true);
             $('#clearBoard').prop('disabled', true);
             $('#getGameSubscribe').prop('disabled', true);
             $('#getGame').prop('disabled', true);
             $('#deleteGame').prop('disabled', true);
+            //
+            $('#userIdentity').prop('disabled', false);
+            $('#tokenPassword').prop('disabled', false);
+            //
             break;
         case "getTokenSetSyncObject":
             $('#getTokenSetSyncObject').prop('disabled', true);
+            $('#resetTokenSyncObject').prop('disabled', false);
             $('#clearBoard').prop('disabled', false);
             $('#getGameSubscribe').prop('disabled', false);
             $('#getGame').prop('disabled', false);
             $('#deleteGame').prop('disabled', false);
+            //
+            $('#userIdentity').prop('disabled', true);
+            $('#tokenPassword').prop('disabled', true);
+            //
             break;
     }
 }
