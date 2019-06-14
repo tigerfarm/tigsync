@@ -17,7 +17,7 @@ var theSyncDocumentName;        // The document name is needs work.
 // var $buttons = $('#board .board-row button');
 
 // -----------------------------------------------------------------------------
-// Sync functions
+// Token functions
 
 function getTokenSetSyncObject() {
     clearFormMessages();
@@ -43,38 +43,84 @@ function getTokenSetSyncObject() {
         $("#mUserIdentity").html("Token refreshed");
         logger('tokenResponse.token: ' + tokenResponse.token);
         //
-        logger('Create Sync object.');
-        thisSyncClientObject = new Twilio.Sync.Client(tokenResponse.token, {logLevel: 'info'});
-        //
-        // ---------------------------------------------------------------------
-        // Events: connectionStateChanged, tokenAboutToExpire, tokenExpired
-
-        thisSyncClientObject.on('connectionStateChanged', function (state) {
-            if (state === 'connected') {
-                logger('Sync is connected.');
-                setButtons('getTokenSetSyncObject');
-            } else {
-                logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
-                return;
-            }
-        });
-        thisSyncClientObject.on('tokenAboutToExpire', function () {
-            logger('Event happened: tokenAboutToExpire.');
-            setButtons('init'); // for now
-            // key: "updateToken",
-            // value: function updateToken(token)
-        });
+        createSyncObject(tokenResponse.token);
 
         // ---------------------------------------------------------------------
     });
 }
 
-function documentSubscribe() {
+function createSyncObject(token) {
+    if (token === "") {
+        $("#mTokenPassword").html("Required");
+        logger("Required: user password.");
+        return;
+    }
+    logger('Create Sync object.');
+    thisSyncClientObject = new Twilio.Sync.Client(token, {logLevel: 'info'});
+    //
+    // ---------------------------------------------------------------------
+    // Sync object events
+    //
+    thisSyncClientObject.on('connectionStateChanged', function (state) {
+        if (state === 'connected') {
+            logger('Sync is connected.');
+            setButtons('getTokenSetSyncObject');
+        } else {
+            logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
+            return;
+        }
+    });
+    thisSyncClientObject.on('tokenAboutToExpire', function () {
+        logger('Event happened: tokenAboutToExpire.');
+        getTokenUpdateSyncObject();
+    });
+    thisSyncClientObject.on('tokenExpired', function () {
+        logger('Event happened: tokenExpired.');
+        setButtons('init');
+    });
+}
+
+function getTokenUpdateSyncObject() {
+    if (thisIdentity === "") {
+        $("#mUserIdentity").html("Required");
+        logger("Required: user identity.");
+        return;
+    }
+    var tokenPassword = $("#tokenPassword").val();
+    if (tokenPassword === "") {
+        $("#mTokenPassword").html("Required");
+        logger("Required: user password.");
+        return;
+    }
+    $.getJSON('/token?identity=' + thisIdentity + "&password=" + tokenPassword, function (tokenResponse) {
+        if (tokenResponse.message !== '') {
+            $("#mTokenPassword").html(tokenResponse.message);
+            logger(tokenResponse.message);
+            return;
+        }
+        $("#mUserIdentity").html("Token refreshed");
+        logger('Update: tokenResponse.token: ' + tokenResponse.token);
+        //
+        // value: function updateToken(token)
+        thisSyncClientObject.updateToken(tokenResponse.token);
+        logger('Sync Client Object token: updated.');
+    });
+}
+
+// -----------------------------------------------------------------------------
+// Sync document functions
+
+function getSyncDocumentSetBoard(subscribe) {
     clearFormMessages();
+    if (thisIdentity === "") {
+        $("#mUserIdentity").html("Required");
+        logger("Required: user identity.");
+        return;
+    }
     var syncDocumentName = $("#syncDocumentName").val();
     if (syncDocumentName === "") {
         $("#mSyncDocumentName").html("Required");
-        logger("Required: Game name (Sync document name).");
+        logger("Required: Game name.");
         return;
     }
     // -------------------------------------------------------------------------
@@ -89,21 +135,22 @@ function documentSubscribe() {
         } else {
             $("#mSyncDocumentName").html("New game document.");
         }
-
-        // ---------------------------------------------------------------------
-        // Need to not re-subscribe to a document.
-        //  Else, for each re-subscription, when an update is made,
-        //      it will be processed that same number of times subscribed.
-        //
-        // @flozanovski, suggested the following, for an object binding:
-        //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
-        //  
-        subscribeEvents();
-        // ---------------------------------------------------------------------
+        if (subscribe === 'subscribe') {
+            documentSubscribeEvents();
+        }
     });
 }
 
-function subscribeEvents() {
+function documentSubscribeEvents() {
+    //
+    // ---------------------------------------------------------------------
+    // Need to not re-subscribe to a document.
+    //  Else, for each re-subscription, when an update is made,
+    //      it will be processed that same number of times subscribed.
+    //
+    // @flozanovski, suggested the following, for an object binding:
+    //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
+    //
     logger('Subscribed to updates for Sync document : ' + theSyncDocumentName);
     thisSyncDocumentObject.on('updated', function (syncEvent) {
         var currentSyncDocumentName = $("#syncDocumentName").val();
@@ -177,24 +224,6 @@ function clearBoard() {
     updateSyncDocument();
 }
 
-function getGame() {
-    if (thisIdentity === "") {
-        $("#mUserIdentity").html("Required");
-        logger("Required: user identity.");
-        return;
-    }
-    var syncDocumentName = $("#syncDocumentName").val();
-    if (syncDocumentName === "") {
-        $("#mSyncDocumentName").html("Required");
-        logger("Required: Game name.");
-        return;
-    }
-    aClearBoard = {"board": [["", "", ""], ["", "", ""], ["", "", ""]], "useridentity": thisIdentity};
-    // logger('aClearBoard JSON data: ' + JSON.stringify(aClearBoard));
-    updateBoardSquares(aClearBoard);
-    documentSubscribe();
-}
-
 function buttonClick() {
     $square = $(event.target);
     var squareValue = $square.html();
@@ -240,6 +269,7 @@ function updateBoardSquares(data) {
 }
 
 // -----------------------------------------------------------------------------
+//  UI functions
 
 function logger(message) {
     var aTextarea = document.getElementById('log');
@@ -261,12 +291,14 @@ function setButtons(activity) {
         case "init":
             $('#getTokenSetSyncObject').prop('disabled', false);
             $('#clearBoard').prop('disabled', true);
+            $('#getGameSubscribe').prop('disabled', true);
             $('#getGame').prop('disabled', true);
             $('#deleteGame').prop('disabled', true);
             break;
         case "getTokenSetSyncObject":
             $('#getTokenSetSyncObject').prop('disabled', true);
             $('#clearBoard').prop('disabled', false);
+            $('#getGameSubscribe').prop('disabled', false);
             $('#getGame').prop('disabled', false);
             $('#deleteGame').prop('disabled', false);
             break;
