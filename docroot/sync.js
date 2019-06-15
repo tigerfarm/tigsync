@@ -56,10 +56,11 @@ function createSyncObject(token) {
     //
     thisSyncClientObject.on('connectionStateChanged', function (state) {
         if (state === 'connected') {
-            logger('Sync is connected.');
+            logger('Sync connection open.');
             setButtons('getTokenSetSyncObject');
         } else {
-            logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
+            // logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
+            logger('Sync connection closed.');
             return;
         }
     });
@@ -134,6 +135,12 @@ function documentSubscribeEvents() {
     //
     // @flozanovski, suggested the following, for an object binding:
     //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
+    //      
+    // @skuusk
+    //      You are adding event handler for particular sync document only (`syncDoc.on()`) is called only for particular document.
+    //      In that handler you can add needed context yourself;
+    //          a la map the event data to your own object and
+    //          attach at the same time knowledge about what document it is.
     //
     logger('Subscribe to updates for Sync document : ' + theSyncDocumentName);
     thisSyncDocumentObject.on('updated', function (syncEvent) {
