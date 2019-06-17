@@ -12,7 +12,6 @@
 var thisIdentity = '';
 var thisSyncClientObject;
 var thisSyncDocumentObject;
-var theSyncDocumentName;        // The document name is needs work.
 
 // var $buttons = $('#board .board-row button');
 
@@ -52,25 +51,26 @@ function createSyncObject(token) {
     thisSyncClientObject = new Twilio.Sync.Client(token, {logLevel: 'info'});
     //
     // ---------------------------------------------------------------------
-    // Sync object events
+    logger('Set Sync object events.');
     //
     thisSyncClientObject.on('connectionStateChanged', function (state) {
         if (state === 'connected') {
-            logger('Sync connection open.');
+            logger('Sync object event: Sync connection open.');
             setButtons('getTokenSetSyncObject');
         } else {
             // logger('Sync is not connected (websocket connection <span style="color: red">' + state + '</span>)…');
-            logger('Sync connection closed.');
+            logger('Sync object event: Sync connection closed.');
             return;
         }
     });
     thisSyncClientObject.on('tokenAboutToExpire', function () {
-        logger('Event happened: tokenAboutToExpire.');
+        logger('Sync object event: tokenAboutToExpire.');
         getTokenUpdateSyncObject();
     });
     thisSyncClientObject.on('tokenExpired', function () {
-        logger('Event happened: tokenExpired.');
-        setButtons('init');
+        logger('Sync object event: tokenExpired.');
+        resetButtons();
+        $("#mUserIdentity").html("Token expired");
     });
 }
 
@@ -108,8 +108,7 @@ function getSyncDocumentSetBoard(subscribe) {
     }
     // -------------------------------------------------------------------------
     thisSyncClientObject.document(syncDocumentName).then(function (syncDoc) {
-        theSyncDocumentName = syncDocumentName;
-        logger('Sync document object created for document: ' + theSyncDocumentName);
+        logger('Sync document object created for document: ' + syncDocumentName);
         thisSyncDocumentObject = syncDoc;
         var data = thisSyncDocumentObject.value;
         if (data.board) {
@@ -120,12 +119,12 @@ function getSyncDocumentSetBoard(subscribe) {
             $("#mSyncDocumentName").html("New game document.");
         }
         if (subscribe === 'subscribe') {
-            documentSubscribeEvents();
+            documentSubscribeEvents(syncDocumentName);
         }
     });
 }
 
-function documentSubscribeEvents() {
+function documentSubscribeEvents(syncDocumentName) {
     //
     // ---------------------------------------------------------------------
     // Need to not re-subscribe to a document.
@@ -142,7 +141,7 @@ function documentSubscribeEvents() {
     //          a la map the event data to your own object and
     //          attach at the same time knowledge about what document it is.
     //
-    logger('Subscribe to updates for Sync document : ' + theSyncDocumentName);
+    logger('Subscribe to updates for Sync document : ' + syncDocumentName);
     thisSyncDocumentObject.on('updated', function (syncEvent) {
         var thisDocumentUser = syncEvent.value.useridentity;
         var thisDocumentName = syncEvent.value.name;
@@ -159,8 +158,8 @@ function documentSubscribeEvents() {
             // Updated by another player.
             $("#mSyncDocumentName").html("Updated: " + thisDocumentName + " by: " + thisDocumentUser);
         }
-        // logger('Upated Sync document data: ' + JSON.stringify(syncEvent.value));
-        logger('Upated Sync document data by: ' + thisDocumentUser);
+        // logger('Updated Sync document data: ' + JSON.stringify(syncEvent.value));
+        logger('Sync document event: document updated by: ' + thisDocumentUser);
         updateGameBoard(syncEvent.value);
     });
 }
@@ -272,7 +271,8 @@ function clearFormMessages() {
     $("#mTokenPassword").html("");
     $("#mSyncDocumentName").html("");
 }
-function resetTokenSyncObject() {
+function resetButtons() {
+    clearFormMessages();
     clearBoard();
     setButtons('init');
 }
@@ -282,7 +282,7 @@ function setButtons(activity) {
     switch (activity) {
         case "init":
             $('#getTokenSetSyncObject').prop('disabled', false);
-            $('#resetTokenSyncObject').prop('disabled', true);
+            $('#resetButtons').prop('disabled', true);
             $('#clearGameBoard').prop('disabled', true);
             $('#getGameSubscribe').prop('disabled', true);
             $('#getGame').prop('disabled', true);
@@ -290,11 +290,13 @@ function setButtons(activity) {
             //
             $('#userIdentity').prop('disabled', false);
             $('#tokenPassword').prop('disabled', false);
+            $('#userIdentity').css("background","white");
+            $('#tokenPassword').css("background","white");
             //
             break;
         case "getTokenSetSyncObject":
             $('#getTokenSetSyncObject').prop('disabled', true);
-            $('#resetTokenSyncObject').prop('disabled', false);
+            $('#resetButtons').prop('disabled', false);
             $('#clearGameBoard').prop('disabled', false);
             $('#getGameSubscribe').prop('disabled', false);
             $('#getGame').prop('disabled', false);
@@ -302,6 +304,8 @@ function setButtons(activity) {
             //
             $('#userIdentity').prop('disabled', true);
             $('#tokenPassword').prop('disabled', true);
+            $('#userIdentity').css("background","LightGrey ");
+            $('#tokenPassword').css("background","LightGrey ");
             //
             break;
     }
