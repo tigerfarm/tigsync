@@ -11,10 +11,9 @@ console.log('-------------');
 client.sync.services(syncServiceSid).documents
     .each(syncDocuments => {
         // console.log( "+ SID: " + syncDocItems.sid + ' ' + JSON.stringify(syncDocItems) );
-        console.log( "+ uniqueName: " + syncDocuments.uniqueName + '\n'
-                + '++ Created by: ' + syncDocuments.createdBy + '\n'
-                + '++ data: ' + JSON.stringify( syncDocuments.data ) + '\n'
-                + '-------------'
+        console.log( "+ uniqueName: " + syncDocuments.uniqueName
+                + ', Created by: ' + syncDocuments.createdBy
+                + ', data: ' + JSON.stringify( syncDocuments.data )
                 );
     });
 

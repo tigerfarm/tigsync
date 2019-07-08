@@ -132,11 +132,10 @@ function documentSubscribeEvents(syncDocumentName) {
     //      it will be processed that same number of times subscribed.
     //      This is similar to the issue with Chat.
     //
-    // @flozanovski, suggested the following, for an object binding:
+    // Suggested the following, for an object binding:
     //      syncDoc.on('updated', function (syncEvent) { ... }.bind(syncDoc);
     //      
-    // @skuusk
-    //      You are adding event handler for particular sync document only (`syncDoc.on()`) is called only for particular document.
+    // You are adding event handler for particular sync document only (`syncDoc.on()`) is called only for particular document.
     //      In that handler you can add needed context yourself;
     //          a la map the event data to your own object and
     //          attach at the same time knowledge about what document it is.
