@@ -42,7 +42,7 @@ function updateGameBoard(currentBoard) {
     console.log("++ updateGameBoard, updatedBoard: " + JSON.stringify(boardSquares));
     return boardSquares;
 }
-function updateDocument(response,currentData) {
+function updateDocument(response, currentData) {
     var theBoard = updateGameBoard(currentData.board);
     let theData = {"useridentity": userIdentity, "name": syncDocumentUniqueName, "board": theBoard};
     console.log("++ Update Sync Service:Document:data: " + syncServiceSid + ":" + syncDocumentUniqueName + ":" + JSON.stringify(theData));
@@ -53,7 +53,7 @@ function updateDocument(response,currentData) {
                 response.send("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
             }).catch(function (error) {
         console.log("- " + error);
-                response.send("- Error updating document: " + syncDocumentUniqueName + " value = " + syncDataValue + " - " + error);
+        response.send("- Error updating document: " + syncDocumentUniqueName + " value = " + syncDataValue + " - " + error);
         // callback("- " + error);
     });
 }
@@ -66,9 +66,10 @@ function retrieveUpdateDocument(response) {
                         + ', Created by: ' + syncDocItems.createdBy
                         + ', data: ' + JSON.stringify(syncDocItems.data)
                         );
-                updateDocument(response,syncDocItems.data);
+                updateDocument(response, syncDocItems.data);
             }).catch(function (error) {
-        console.log("- " + error);
+        console.log("- Error retrieving document: " + syncDocumentUniqueName + " - " + error);
+        response.send("- Error retrieving document: " + syncDocumentUniqueName + " - " + error);
         // callback("- " + error);
     });
 }
