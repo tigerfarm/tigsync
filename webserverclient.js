@@ -94,6 +94,9 @@ function createSyncObject(token) {
     logger('Create Sync object.');
     // thisSyncClientObject = new Twilio.Sync.Client(tokenResponse.token, { logLevel: 'info' });
     // thisSyncClientObject = clientSync.Client.create(token);
+    // 
+    // Recommended:
+    // var syncClient = new Sync(token);
     clientSync.Client.create(token).then(theClient => {
         logger('The Client is created.');
     });
