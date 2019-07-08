@@ -18,12 +18,16 @@ function logger(message) {
     console.log("+ " + message);
 }
 
-var thisIdentity = '';
+var theRow = 0;
+var theColumn = 0;
+var userIdentity = '';
+var syncDocumentUniqueName = '';
+var syncDataValuePosition = '';
+var syncDataValue = '';
+
 var thisSyncClientObject;
 var thisSyncDocumentObject;
-
 var thisTokenPassword;
-var thisSyncDocumentName;
 
 var userIdentity = process.argv[2] || "";
 if (userIdentity !== "") {
@@ -37,12 +41,12 @@ if (thisTokenPassword !== "") {
         thisTokenPassword = '';
     }
 }
-var thisSyncDocumentName = process.argv[4] || "";
-if (thisSyncDocumentName !== "") {
-    console.log("+ Sync document name: " + thisSyncDocumentName);
+var syncDocumentUniqueName = process.argv[4] || "";
+if (syncDocumentUniqueName !== "") {
+    console.log("+ Sync document name: " + syncDocumentUniqueName);
 }
 
-if (userIdentity !== '' && thisTokenPassword !== '' && thisSyncDocumentName !== '') {
+if (userIdentity !== '' && thisTokenPassword !== '' && syncDocumentUniqueName !== '') {
     console.log("++ Have the parameters to sync the document.");
     var theUpdateToken = generateSyncToken();
     if (theUpdateToken === '') {
@@ -52,8 +56,8 @@ if (userIdentity !== '' && thisTokenPassword !== '' && thisSyncDocumentName !== 
     createSyncObject(theUpdateToken);
 }
 
-console.log("+ Exit.");
-process.exit();
+// console.log("+ Exit.");
+// process.exit();
 
 function generateSyncToken() {
     if (process.env.SYNC_SERVICE_SID === "") {
@@ -86,26 +90,22 @@ function generateSyncToken() {
     token.addGrant(syncGrant);
     token.identity = userIdentity;
     var theToken = token.toJwt();
-    logger("Generate token: " + theToken);
+    logger("Generated token: " + theToken);
     return theToken;
 }
 
 function createSyncObject(token) {
     logger('Create Sync object.');
-    // thisSyncClientObject = new Twilio.Sync.Client(tokenResponse.token, { logLevel: 'info' });
-    // thisSyncClientObject = clientSync.Client.create(token);
     // 
-    // Recommended:
-    // var syncClient = new Sync(token);
-    clientSync.Client.create(token).then(theClient => {
-        logger('The Client is created.');
-    });
+    // Recommended by dsinelnikov:
+    thisSyncClientObject = new clientSync(token);
     //
     // ---------------------------------------------------------------------
     logger('Set Sync object events.');
     thisSyncClientObject.on('connectionStateChanged', function (state) {
         if (state === 'connected') {
             logger('Sync object event: Sync connection open.');
+            getSyncDocumentSetBoard('subscribe');
         } else {
             logger('Sync object event: Sync connection closed.');
             return;
@@ -121,7 +121,7 @@ function createSyncObject(token) {
 }
 
 function getTokenUpdateSyncObject() {
-    if (thisIdentity === "") {
+    if (userIdentity === "") {
         logger("Required: user identity.");
         return;
     }
@@ -139,6 +139,33 @@ function getTokenUpdateSyncObject() {
     logger('Sync client object token: updated.');
 }
 
+function getSyncDocumentSetBoard(subscribe) {
+    if (userIdentity === "") {
+        logger("Required: user identity.");
+        return;
+    }
+    if (syncDocumentUniqueName === "") {
+        logger("Required: Game name.");
+        return;
+    }
+    // -------------------------------------------------------------------------
+    logger('Create Sync document object, for document: ' + syncDocumentUniqueName);
+    thisSyncClientObject.document(syncDocumentUniqueName).then(function (syncDoc) {
+        logger('Sync document object created for document: ' + syncDocumentUniqueName);
+        thisSyncDocumentObject = syncDoc;
+        var data = thisSyncDocumentObject.value;
+        if (data.board) {
+            logger('Sync document data loaded: ' + JSON.stringify(data));
+            // updateGameBoard(data);
+        } else {
+            logger('New game document.');
+        }
+        if (subscribe === 'subscribe') {
+            documentSubscribeEvents(syncDocumentUniqueName);
+        }
+    });
+}
+
 function documentSubscribeEvents(syncDocumentName) {
     logger('Subscribe to updates for Sync document : ' + syncDocumentName);
     thisSyncDocumentObject.on('updated', function (syncEvent) {
@@ -151,23 +178,46 @@ function documentSubscribeEvents(syncDocumentName) {
         }
         // logger('Updated Sync document data: ' + JSON.stringify(syncEvent.value));
         logger('Sync document event: document updated by: ' + thisDocumentUser);
-        updateGameBoard(syncEvent.value);
+        // updateGameBoard(syncEvent.value);
     });
 }
 
 function updateSyncDocument() {
-    if (thisIdentity === "") {
+    if (userIdentity === "") {
         logger("Required: user identity.");
         return;
     }
-    if (thisSyncDocumentName === "") {
+    if (syncDocumentUniqueName === "") {
         logger("Required: Game name (Sync document name).");
         return;
     }
-    var currentBoard = readGameBoard();
-    // logger('currentBoard JSON data: ' + JSON.stringify(currentBoard));
-    thisSyncDocumentObject.set({board: currentBoard, useridentity: thisIdentity, name: thisSyncDocumentName});
+    // var currentBoard = readGameBoard();
+    theBoard = [["X", "O", "X"], ["", "O", ""], ["", "", ""]];
+    logger('+ theBoard JSON data: ' + JSON.stringify(theBoard));
+    thisSyncDocumentObject.set({board: theBoard, useridentity: userIdentity, name: syncDocumentUniqueName});
 }
+
+// -----------------------------------------------------------------------------
+app.get('/syncdocumentsubscribe', function (request, response) {
+    //
+    // http://localhost:8000/syncdocumentsubscribe?name=abc
+    //
+    if (request.query.name) {
+        syncDocumentUniqueName = request.query.name;
+    } else {
+        response.send({message: '- Error: Sync document name is required.'});
+        return;
+    }
+    getSyncDocumentSetBoard('subscribe');
+    response.send('+ Subscribed.');
+});
+app.get('/syncdocumentupdate', function (request, response) {
+    //
+    // http://localhost:8000/syncdocumentupdate?identity=aclient&name=abc&position=5&value=X
+    //
+    updateSyncDocument();
+    response.send('+ Updated.');
+});
 
 // -----------------------------------------------------------------------------
 app.get('/token', function (request, response) {
