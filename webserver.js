@@ -15,46 +15,107 @@ const authToken = process.env.AUTH_TOKEN;
 const client = require('twilio')(accountSid, authToken);
 const syncServiceSid = process.env.SYNC_SERVICE_SID;
 //
-const useridentity = 'webserver';
-
 // -----------------------------------------------------------------------------
+var theRow = 0;
+var theColumn = 0;
+var userIdentity = '';
+var syncDocumentUniqueName = '';
+var syncDataValuePosition = '';
+var syncDataValue = '';
+
+function updateGameBoard(currentBoard) {
+    console.log("++ updateGameBoard, currentBoard: " + JSON.stringify(currentBoard));
+    var boardSquares = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
+    for (var row = 0; row < 3; row++) {
+        for (var col = 0; col < 3; col++) {
+            if (theRow === row && theColumn === col) {
+                boardSquares[row][col] = syncDataValue;
+            } else {
+                boardSquares[row][col] = currentBoard[row][col];
+            }
+        }
+    }
+    console.log("++ updateGameBoard, updatedBoard: " + JSON.stringify(boardSquares));
+    return boardSquares;
+}
+function updateDocument(response,currentData) {
+    var theBoard = updateGameBoard(currentData.board);
+    let theData = {"useridentity": userIdentity, "name": syncDocumentUniqueName, "board": theBoard};
+    console.log("++ Update Sync Service:Document:data: " + syncServiceSid + ":" + syncDocumentUniqueName + ":" + JSON.stringify(theData));
+    client.sync.services(syncServiceSid).documents(syncDocumentUniqueName)
+            .update({data: theData})
+            .then((sync_item) => {
+                console.log("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
+                response.send("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
+            }).catch(function (error) {
+        console.log("- " + error);
+                response.send("- Error updating document: " + syncDocumentUniqueName + " value = " + syncDataValue + " - " + error);
+        // callback("- " + error);
+    });
+}
+function retrieveUpdateDocument(response) {
+    console.log("+ Retrieve Sync document, SID:" + syncServiceSid + ",   name: " + syncDocumentUniqueName);
+    client.sync.services(syncServiceSid).documents(syncDocumentUniqueName)
+            .fetch()
+            .then((syncDocItems) => {
+                console.log("++ uniqueName: " + syncDocItems.uniqueName
+                        + ', Created by: ' + syncDocItems.createdBy
+                        + ', data: ' + JSON.stringify(syncDocItems.data)
+                        );
+                updateDocument(response,syncDocItems.data);
+            }).catch(function (error) {
+        console.log("- " + error);
+        // callback("- " + error);
+    });
+}
+
 app.get('/syncdocumentupdate', function (request, response) {
     //
-    // http://localhost:8000/syncdocumentupdate?identity=aclient&name=abc&value=X
+    // http://localhost:8000/syncdocumentupdate?identity=aclient&name=abc&position=5&value=X
     //
-    var userIdentity = '';
     if (request.query.identity) {
         userIdentity = request.query.identity;
     } else {
         response.send({message: '- Identity required.'});
         return;
     }
-    var syncDocumentUniqueName = '';
     if (request.query.name) {
         syncDocumentUniqueName = request.query.name;
     } else {
         response.send({message: '- Error: Sync document name is required.'});
         return;
     }
+    // -----------------------------
+    if (request.query.position) {
+        syncDataValuePosition = request.query.position;
+    } else {
+        response.send({message: '- Error: Sync Data Value position is required.'});
+        return;
+    }
+    if (syncDataValuePosition < 1 || syncDataValuePosition > 9) {
+        response.send({message: '- Error: The tic tac sync position must be between 1 and 9.'});
+        return;
+    }
+    theRow = parseInt(syncDataValuePosition / 3);
+    theColumn = syncDataValuePosition % 3 - 1;
+    if (theColumn === -1) {
+        theRow = parseInt(syncDataValuePosition / 3 - 1);
+        theColumn = 3 - 1;
+    }
+    console.log("+ theRow:" + theRow + ", theColumn: " + theColumn);
+    // -----------------------------
     if (request.query.value) {
         syncDataValue = request.query.value;
     } else {
         response.send({message: '- Error: Sync Data Value is required.'});
         return;
     }
-    var theBoard = [["X","",""],["",syncDataValue,""],["","","X"]];
-    let theData = {"useridentity":userIdentity,"name":syncDocumentUniqueName,"board":theBoard};
-    console.log("++ Update Sync Service:Document:data: " + syncServiceSid + ":" + syncDocumentUniqueName + ":" + JSON.stringify(theData));
-    client.sync.services(syncServiceSid).documents(syncDocumentUniqueName)
-            .update({data: theData})
-            .then((sync_item) => {
-                console.log("+ Updated counter: " + sync_item.uniqueName + " counter = " + syncDataValue);
-                response.send('+ ' + userIdentity + ', updated tic tac sync document, ' + syncDocumentUniqueName + ', value to: ' + syncDataValue);
-            }).catch(function (error) {
-        console.log("- " + error);
-                response.send('- Error updating tic tac sync document.');
-        // callback("- " + error);
-    });
+    // -----------------------------
+    retrieveUpdateDocument(response);
 });
 
 app.get('/token', function (request, response) {
