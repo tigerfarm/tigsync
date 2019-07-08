@@ -1,5 +1,5 @@
 # Ignore my specific variables:
-setserver.js
 setheroku.sh
-node_mobules
+#
+/node_modules/
 #
