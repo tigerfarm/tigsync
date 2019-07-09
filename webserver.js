@@ -50,7 +50,10 @@ function updateDocument(response, currentData) {
             .update({data: theData})
             .then((sync_item) => {
                 console.log("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
-                response.send("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
+                response.send("+ Updated document: " + syncDocumentUniqueName
+                        + " position = " + syncDataValuePosition
+                        + " value = " + syncDataValue
+                        + "\r\n");
             }).catch(function (error) {
         console.log("- " + error);
         response.send("- Error updating document: " + syncDocumentUniqueName + " value = " + syncDataValue + " - " + error);
@@ -158,6 +161,16 @@ app.get('/token', function (request, response) {
     });
     // Reset, which requires the next person to set their identity before getting a token.
     userIdentity = '';
+});
+
+// -----------------------------------------------------------------------------
+app.get('/hello', function (req, res) {
+    console.log("+ Request: /hello");
+    if (req.query.username) {
+        res.send('Hello ' + req.query.username + '.');
+    } else {
+        res.send('Hello there.\r\n');
+    }
 });
 
 // -----------------------------------------------------------------------------

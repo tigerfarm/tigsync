@@ -12,6 +12,7 @@ var SyncGrant = AccessToken.SyncGrant;
 const clientSync = require('twilio-sync');
 
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Client functions 
 
 function logger(message) {
@@ -28,6 +29,12 @@ var syncDataValue = '';
 var thisSyncClientObject;
 var thisSyncDocumentObject;
 var thisTokenPassword;
+
+var thisCurrentBoard = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
 
 var userIdentity = process.argv[2] || "";
 if (userIdentity !== "") {
@@ -56,8 +63,8 @@ if (userIdentity !== '' && thisTokenPassword !== '' && syncDocumentUniqueName !=
     createSyncObject(theUpdateToken);
 }
 
-// console.log("+ Exit.");
-// process.exit();
+// -----------------------------------------------------------------------------
+// Token generation
 
 function generateSyncToken() {
     if (process.env.SYNC_SERVICE_SID === "") {
@@ -94,32 +101,6 @@ function generateSyncToken() {
     return theToken;
 }
 
-function createSyncObject(token) {
-    logger('Create Sync object.');
-    // 
-    // Recommended by dsinelnikov:
-    thisSyncClientObject = new clientSync(token);
-    //
-    // ---------------------------------------------------------------------
-    logger('Set Sync object events.');
-    thisSyncClientObject.on('connectionStateChanged', function (state) {
-        if (state === 'connected') {
-            logger('Sync object event: Sync connection open.');
-            getSyncDocumentSetBoard('subscribe');
-        } else {
-            logger('Sync object event: Sync connection closed.');
-            return;
-        }
-    });
-    thisSyncClientObject.on('tokenAboutToExpire', function () {
-        logger('Sync object event: tokenAboutToExpire.');
-        getTokenUpdateSyncObject();
-    });
-    thisSyncClientObject.on('tokenExpired', function () {
-        logger('Sync object event: tokenExpired.');
-    });
-}
-
 function getTokenUpdateSyncObject() {
     if (userIdentity === "") {
         logger("Required: user identity.");
@@ -139,6 +120,32 @@ function getTokenUpdateSyncObject() {
     logger('Sync client object token: updated.');
 }
 
+// -----------------------------------------------------------------------------
+function createSyncObject(token) {
+    logger('Create Sync object.');
+    thisSyncClientObject = new clientSync(token);
+    // -------------------------------
+    logger('Set Sync object events.');
+    thisSyncClientObject.on('connectionStateChanged', function (state) {
+        if (state === 'connected') {
+            logger('Sync object event: Sync connection open.');
+            // -------------------------------
+            // Get the document and subscribe to it.
+            getSyncDocumentSetBoard('subscribe');
+        } else {
+            logger('Sync object event: Sync connection closed.');
+            return;
+        }
+    });
+    thisSyncClientObject.on('tokenAboutToExpire', function () {
+        logger('Sync object event: tokenAboutToExpire.');
+        getTokenUpdateSyncObject();
+    });
+    thisSyncClientObject.on('tokenExpired', function () {
+        logger('Sync object event: tokenExpired.');
+    });
+}
+
 function getSyncDocumentSetBoard(subscribe) {
     if (userIdentity === "") {
         logger("Required: user identity.");
@@ -156,7 +163,7 @@ function getSyncDocumentSetBoard(subscribe) {
         var data = thisSyncDocumentObject.value;
         if (data.board) {
             logger('Sync document data loaded: ' + JSON.stringify(data));
-            // updateGameBoard(data);
+            thisCurrentBoard = data.board;
         } else {
             logger('New game document.');
         }
@@ -182,7 +189,7 @@ function documentSubscribeEvents(syncDocumentName) {
     });
 }
 
-function updateSyncDocument() {
+function updateSyncDocument(theBoard) {
     if (userIdentity === "") {
         logger("Required: user identity.");
         return;
@@ -192,70 +199,102 @@ function updateSyncDocument() {
         return;
     }
     // var currentBoard = readGameBoard();
-    theBoard = [["X", "O", "X"], ["", "O", ""], ["", "", ""]];
+    // theBoard = [["X", "O", "X"], ["", "O", ""], ["", "", ""]];
     logger('+ theBoard JSON data: ' + JSON.stringify(theBoard));
     thisSyncDocumentObject.set({board: theBoard, useridentity: userIdentity, name: syncDocumentUniqueName});
 }
 
-// -----------------------------------------------------------------------------
-app.get('/syncdocumentsubscribe', function (request, response) {
-    //
-    // http://localhost:8000/syncdocumentsubscribe?name=abc
-    //
-    if (request.query.name) {
-        syncDocumentUniqueName = request.query.name;
-    } else {
-        response.send({message: '- Error: Sync document name is required.'});
-        return;
+function updateGameBoard(currentBoard) {
+    console.log("++ updateGameBoard, currentBoard: " + JSON.stringify(currentBoard));
+    var boardSquares = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
+    for (var row = 0; row < 3; row++) {
+        for (var col = 0; col < 3; col++) {
+            if (theRow === row && theColumn === col) {
+                boardSquares[row][col] = syncDataValue;
+            } else {
+                boardSquares[row][col] = currentBoard[row][col];
+            }
+        }
     }
-    getSyncDocumentSetBoard('subscribe');
-    response.send('+ Subscribed.');
-});
+    console.log("++ updateGameBoard, updatedBoard: " + JSON.stringify(boardSquares));
+    return boardSquares;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// HTTP Request Handlers
+
+// -----------------------------------------------------------------------------
 app.get('/syncdocumentupdate', function (request, response) {
     //
     // http://localhost:8000/syncdocumentupdate?identity=aclient&name=abc&position=5&value=X
     //
-    updateSyncDocument();
-    response.send('+ Updated.');
-});
-
-// -----------------------------------------------------------------------------
-app.get('/token', function (request, response) {
-    // Docs: https://www.twilio.com/docs/sync/identity-and-access-tokens
-    var userIdentity = '';
     if (request.query.identity) {
         userIdentity = request.query.identity;
     } else {
         response.send({message: '- Identity required.'});
         return;
     }
-    var tokenPassword = '';
-    if (request.query.password) {
-        tokenPassword = request.query.password;
-        if (tokenPassword !== process.env.TOKEN_PASSWORD) {
-            response.send({message: 'Identity or Password not valid.'});
-            return;
-        }
-    } else {
-        response.send({message: '- Password required.'});
+    
+    // At this time, this program only works for one document.
+    // Needs more coding to handle multiple documents.
+    if (!request.query.name) {
+        response.send({message: '- Error: Sync document name is required.'});
+        return;
+    } else if (request.query.name !== syncDocumentUniqueName) {
+        response.send({message: '- Error: Sync document name must be the same as the document name this server is monitoring.'});
         return;
     }
-    console.log('+ userIdentity: ' + userIdentity);
-    var syncGrant = new SyncGrant({
-        serviceSid: process.env.SYNC_SERVICE_SID
-    });
-    // Need to test: ttl.
-    var token = new AccessToken(
-            process.env.ACCOUNT_SID,
-            process.env.API_KEY,
-            process.env.API_KEY_SECRET
-            );
-    token.addGrant(syncGrant);
-    token.identity = userIdentity;
+    // -----------------------------
+    if (request.query.position) {
+        syncDataValuePosition = request.query.position;
+    } else {
+        response.send({message: '- Error: Sync Data Value position is required.'});
+        return;
+    }
+    if (syncDataValuePosition < 1 || syncDataValuePosition > 9) {
+        response.send({message: '- Error: The tic tac sync position must be between 1 and 9.'});
+        return;
+    }
+    theRow = parseInt(syncDataValuePosition / 3);
+    theColumn = syncDataValuePosition % 3 - 1;
+    if (theColumn === -1) {
+        theRow = parseInt(syncDataValuePosition / 3 - 1);
+        theColumn = 3 - 1;
+    }
+    console.log("+ theRow:" + theRow + ", theColumn: " + theColumn);
+    // -----------------------------
+    if (request.query.value) {
+        syncDataValue = request.query.value;
+    } else {
+        response.send({message: '- Error: Sync Data Value is required.'});
+        return;
+    }
+    // -----------------------------
+    var theBoard = updateGameBoard(thisCurrentBoard);
+    updateSyncDocument(theBoard);
+    response.send('+ Updated.');
+});
+
+// -----------------------------------------------------------------------------
+app.get('/token', function (request, response) {
+    if (userIdentity === "") {
+        logger("Required: user identity.");
+        response.send({
+            message: '- Error, required: user identity.',
+            identity: '',
+            token: ''
+        });
+        return;
+    }
     response.send({
         message: '',
         identity: userIdentity,
-        token: token.toJwt()
+        token: generateSyncToken()
     });
     // Reset, which requires the next person to set their identity before getting a token.
     userIdentity = '';
@@ -275,3 +314,5 @@ const PORT = process.env.PORT || 8000;
 app.listen(PORT, function () {
     console.log('+ Listening on port: ' + PORT);
 });
+
+// -----------------------------------------------------------------------------
