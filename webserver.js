@@ -27,7 +27,7 @@ const aClearBoard = [['', '', ''],['', '', ''],['', '', '']];
 
 function updateGameBoard(currentBoard) {
     console.log("++ updateGameBoard, currentBoard: " + JSON.stringify(currentBoard));
-    var boardSquares = aClearBoard;
+    var boardSquares = [['', '', ''],['', '', ''],['', '', '']];
     for (var row = 0; row < 3; row++) {
         for (var col = 0; col < 3; col++) {
             if (theRow === row && theColumn === col) {
@@ -105,7 +105,7 @@ app.get('/syncdocumentupdate', function (request, response) {
     }
     console.log("+ syncDataValuePosition :" + syncDataValuePosition + ":");
     if (syncDataValuePosition === "0") {
-        console.log("+ Clear the board.");
+        console.log("+ Clear the board, set board to: " + JSON.stringify(aClearBoard));
         theRow = 99;
         theColumn = 99;
         syncDataValue = "";
