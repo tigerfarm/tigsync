@@ -33,7 +33,7 @@ function updateGameBoard(currentBoard) {
     for (var row = 0; row < 3; row++) {
         for (var col = 0; col < 3; col++) {
             if (theRow === row && theColumn === col) {
-                boardSquares[row][col] = syncDataValue;
+                boardSquares[row][col] = syncDataValue; // replace with new value.
             } else {
                 boardSquares[row][col] = currentBoard[row][col];
             }
@@ -42,8 +42,8 @@ function updateGameBoard(currentBoard) {
     console.log("++ updateGameBoard, updatedBoard: " + JSON.stringify(boardSquares));
     return boardSquares;
 }
-function updateDocument(response, currentData) {
-    var theBoard = updateGameBoard(currentData.board);
+function updateDocument(response, currentBoard) {
+    var theBoard = updateGameBoard(currentBoard);
     let theData = {"useridentity": userIdentity, "name": syncDocumentUniqueName, "board": theBoard};
     console.log("++ Update Sync Service:Document:data: " + syncServiceSid + ":" + syncDocumentUniqueName + ":" + JSON.stringify(theData));
     client.sync.services(syncServiceSid).documents(syncDocumentUniqueName)
@@ -69,7 +69,7 @@ function retrieveUpdateDocument(response) {
                         + ', Created by: ' + syncDocItems.createdBy
                         + ', data: ' + JSON.stringify(syncDocItems.data)
                         );
-                updateDocument(response, syncDocItems.data);
+                updateDocument(response, syncDocItems.data.board);
             }).catch(function (error) {
         console.log("- Error retrieving document: " + syncDocumentUniqueName + " - " + error);
         response.send("- Error retrieving document: " + syncDocumentUniqueName + " - " + error);
@@ -98,6 +98,15 @@ app.get('/syncdocumentupdate', function (request, response) {
         syncDataValuePosition = request.query.position;
     } else {
         response.send({message: '- Error: Sync Data Value position is required.'});
+        return;
+    }
+    console.log("+ syncDataValuePosition :" + syncDataValuePosition + ":");
+    if (syncDataValuePosition === "0") {
+        // Clear the board.
+        theRow = 99;
+        theColumn = 99;
+        syncDataValue = "";
+        updateDocument(response, [['', '', ''],['', '', ''],['', '', '']]);
         return;
     }
     if (syncDataValuePosition < 1 || syncDataValuePosition > 9) {
