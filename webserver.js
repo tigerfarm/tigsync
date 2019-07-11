@@ -23,13 +23,11 @@ var syncDocumentUniqueName = '';
 var syncDataValuePosition = '';
 var syncDataValue = '';
 
+const aClearBoard = [['', '', ''],['', '', ''],['', '', '']];
+
 function updateGameBoard(currentBoard) {
     console.log("++ updateGameBoard, currentBoard: " + JSON.stringify(currentBoard));
-    var boardSquares = [
-        ['', '', ''],
-        ['', '', ''],
-        ['', '', '']
-    ];
+    var boardSquares = aClearBoard;
     for (var row = 0; row < 3; row++) {
         for (var col = 0; col < 3; col++) {
             if (theRow === row && theColumn === col) {
@@ -49,7 +47,7 @@ function updateDocument(response, currentBoard) {
     client.sync.services(syncServiceSid).documents(syncDocumentUniqueName)
             .update({data: theData})
             .then((sync_item) => {
-                console.log("+ Updated document: " + syncDocumentUniqueName + " value = " + syncDataValue);
+                console.log("+ Updated document: " + syncDocumentUniqueName + " position = " + syncDataValuePosition + " value = " + syncDataValue);
                 response.send("+ Updated document: " + syncDocumentUniqueName
                         + " position = " + syncDataValuePosition
                         + " value = " + syncDataValue
@@ -77,6 +75,11 @@ function retrieveUpdateDocument(response) {
     });
 }
 
+// -----------------------------------------------------------------------------
+//  REST API to manage a document.
+//      + Clear a document board: set to a clear board.
+//      + Update a document board square to a specific value.
+
 app.get('/syncdocumentupdate', function (request, response) {
     //
     // http://localhost:8000/syncdocumentupdate?identity=aclient&name=abc&position=5&value=X
@@ -102,11 +105,11 @@ app.get('/syncdocumentupdate', function (request, response) {
     }
     console.log("+ syncDataValuePosition :" + syncDataValuePosition + ":");
     if (syncDataValuePosition === "0") {
-        // Clear the board.
+        console.log("+ Clear the board.");
         theRow = 99;
         theColumn = 99;
         syncDataValue = "";
-        updateDocument(response, [['', '', ''],['', '', ''],['', '', '']]);
+        updateDocument(response, aClearBoard);
         return;
     }
     if (syncDataValuePosition < 1 || syncDataValuePosition > 9) {
@@ -124,13 +127,15 @@ app.get('/syncdocumentupdate', function (request, response) {
     if (request.query.value) {
         syncDataValue = request.query.value;
     } else {
-        response.send({message: '- Error: Sync Data Value is required.'});
-        return;
+        syncDataValue = ''; // allow clearing of a square.
+        // response.send({message: '- Error: Sync Data Value is required.'});
+        // return;
     }
     // -----------------------------
     retrieveUpdateDocument(response);
 });
 
+// -----------------------------------------------------------------------------
 app.get('/token', function (request, response) {
     // Docs: https://www.twilio.com/docs/sync/identity-and-access-tokens
     var userIdentity = '';
