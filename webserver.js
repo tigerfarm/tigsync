@@ -128,8 +128,6 @@ app.get('/syncdocumentupdate', function (request, response) {
         syncDataValue = request.query.value;
     } else {
         syncDataValue = ''; // allow clearing of a square.
-        // response.send({message: '- Error: Sync Data Value is required.'});
-        // return;
     }
     // -----------------------------
     retrieveUpdateDocument(response);
