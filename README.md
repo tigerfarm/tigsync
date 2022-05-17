@@ -1,8 +1,5 @@
 # Twilio Sync Sample Website Application
 
-This repository application is based on the Twilio Sync quickstart:
-https://www.twilio.com/docs/sync/quickstart/js
-
 This version is updated with user inputs for the token identity and the Sync document name.
 I also enhanced the code documentation.
 
@@ -58,7 +55,7 @@ $ node webserver.js
 Use a browser to call the webserver application:
 
 http://localhost:8000/
-
+````
 Enter a user identity, password, and game name.
 Example: david, mypassword, and game1.
 Click Get token, to retrieve the token and start the game.
@@ -67,18 +64,18 @@ Click one of the square to change it to an "X".
 Click the same square to change it to "O".
 Click the same square to reset it to blank.
 Click the same square to change it to "X".
-
+````
 In another browser tab, call the application:
 
 http://localhost:8000/
-
+````
 Enter a different user identity, password, and same game name.
 Example: stacy, mypassword, and game1.
 
 You will see the board as set in the other tab.
 Click another square to change it to an X.
-Change to the other tab to see the change.
-
+Change to the other tab to see the change was synced.
+````
 --------------------------------------------------------------------------------
 ## Program Descriptions
 
