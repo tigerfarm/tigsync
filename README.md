@@ -95,6 +95,9 @@ retrieveDocument.js : retrieve a Sync document, the one used in the sample appli
 
 app.json and package.json : Heroku deployment files.
 
+Test and development programs:
+listDocuments.js, retrieveDocument.js, updateBoard.js, webserverclient.js
+
 --------------------------------------------------------------------------------
 
 Cheers...
