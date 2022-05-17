@@ -83,7 +83,7 @@ webserver.js : Node.js Express webserver:
     + Serve the static files (directory docroot)
     + Generate Sync tokens.
 
-docroot : static website of HTML, CSS, JavaScript, and graphics files.
+docroot                 : static website files.
 docroot/index.html      : the game HTML page.
 docroot/sync.js         : the game JavaScript program.
 docroot/custom/sync.css : HTML page styles.
