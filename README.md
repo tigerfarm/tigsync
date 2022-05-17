@@ -78,26 +78,25 @@ Change to the other tab to see the change was synced.
 ````
 --------------------------------------------------------------------------------
 ## Program Descriptions
-
-webserver.js : Node.js Express webserver to serve the static files (directory docroot) and generate Sync tokens.
+````
+webserver.js : Node.js Express webserver:
+    + Serve the static files (directory docroot)
+    + Generate Sync tokens.
 
 docroot : static website of HTML, CSS, JavaScript, and graphics files.
-
-docroot/index.html : the game HTML page.
-
-docroot/sync.js : the game JavaScript program.
-
-docroot/customer/sync.css : HTML page styles.
-
-listDocuments.js : list Sync documents.
-
-retrieveDocument.js : retrieve a Sync document, the one used in the sample application.
+docroot/index.html      : the game HTML page.
+docroot/sync.js         : the game JavaScript program.
+docroot/custom/sync.css : HTML page styles.
 
 app.json and package.json : Heroku deployment files.
 
 Test and development programs:
-listDocuments.js, retrieveDocument.js, updateBoard.js, webserverclient.js
-
+listDocuments.js    : list Sync documents.
+retrieveDocument.js : retrieve a Sync document, the one used in the sample application.
+syncToken.php       : sample PHP program to generate and return a Twilio Sync token.
+docroot/hello.txt   : to test the web server returning a text file.
+Other               : updateBoard.js, webserverclient.js
+````
 --------------------------------------------------------------------------------
 
 Cheers...
